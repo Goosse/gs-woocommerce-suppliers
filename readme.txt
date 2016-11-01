@@ -1,0 +1,29 @@
+=== GooseSoft WooCommerce Suppliers ===
+Contributors: Joshua Goossen
+Donate link:
+Tags:
+License: GPLv3
+License URI: http://www.gnu.org/licenses/gpl-3.0.html
+Requires at least: 3.5
+Tested up to: 3.5
+Stable tag: 0.1
+
+Adds suppliers to Woocommerce and fields in the product edit page to assign suppliers and costs to the product.
+
+== Description ==
+
+Adds suppliers to Woocommerce and fields in the product edit page to assign suppliers and costs to the product.
+
+== Installation ==
+
+
+== Frequently Asked Questions ==
+
+
+== Screenshots ==
+
+
+== Changelog ==
+
+= 0.1 =
+- Initial Revision

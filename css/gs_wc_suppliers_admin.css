@@ -1,0 +1,15 @@
+.fullWidth {
+    width: 100%;
+}
+
+.gscol50left {
+    width: 49%;
+    padding-right: 1%;
+    float: left
+}
+
+.gscol50right {
+    width: 49%;
+    padding-left: 1%;
+    float: left
+}
