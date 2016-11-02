@@ -91,6 +91,14 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
     add_action( 'admin_init', array(&$this, 'add_gs_suppliers_meta_boxes' ));
     add_action( 'save_post', array(&$this, 'save_gs_suppliers_custom_fields' ));
 
+
+    //Stock actions.
+    add_action( 'woocommerce_product_options_stock_fields', array(&$this, 'add_gs_supplier_stockFields' ));
+    add_action( 'wp_ajax_gs_wc_json_search_suppliers', array(&$this, 'json_search_suppliers' ));
+    add_action( 'woocommerce_process_product_meta', array(&$this, 'gs_wc_save_supplier_stock_meta' ));
+
+
+
     add_action( 'admin_enqueue_scripts', array(&$this, 'enqueue_gs_wc_suppliers_scripts' ));
 
     // Example adding a script & style just for the options administration page
@@ -122,8 +130,20 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
   }
 
   public function enqueue_gs_wc_suppliers_scripts(){
+    $screen       = get_current_screen();
 
+    //Styles
     wp_enqueue_style('gs-wc-suppliers-style', plugins_url('/css/gs_wc_suppliers_admin.css', __FILE__));
+
+    //Scripts
+    //wp_register_script( 'gs_wc_enhanced_supplier_select', plugins_url('/js/gs-wc-enhanced-supplier-select.js')l array( 'jquery', 'select2' ));
+    wp_register_script( 'gs_wc_enhanced_supplier_select', plugins_url('/gs-wc-suppliers/js/gs-wc-enhanced-supplier-select.js'), array( 'jquery', 'select2', 'wc-enhanced-select' ));
+    wp_localize_script( 'gs_wc_enhanced_supplier_select', 'wc_enhanced_supplier_select_params', array(
+      'search_suppliers_nonce'     => wp_create_nonce( 'gs-wc-search-suppliers' ),
+    ));
+
+    if  ( $screen->post_type == 'product' )
+      wp_enqueue_script( 'gs_wc_enhanced_supplier_select' );
   }
 
   //Create Suppliers Taxonomy.
@@ -246,7 +266,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
   function save_gs_suppliers_custom_fields(){
     global $post;
 
-    if ( $post )
+    if ( $post && $post->post_type == 'gs_wc_suppliers')
     {
       update_post_meta($post->ID, "street-address", @$_POST["street-address"]);
       update_post_meta($post->ID, "city", @$_POST["city"]);
@@ -269,4 +289,120 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       return 'Enter title here';
     }
   }
+
+
+  //Stock functions
+  function add_gs_supplier_stockFields(){
+    global $post;
+    ?>
+
+    <p class="form-field">
+      <label for="supplier_ids"><?php _e( 'Change inventory from supplier', 'gs_wc_suppliers' ); ?></label>
+    <input type="hidden"
+    class="gs-wc-supplier-search"
+    style="width: 35%;"
+    id="supplier_id"
+    name="supplier_id"
+    data-placeholder="<?php esc_attr_e( 'Search for a supplier&hellip;', 'gs_wc_suppliers' ); ?>"
+    data-allow_clear="true"
+    data-action="gs_wc_json_search_suppliers"
+    data-multiple="false"
+    data-exclude="<?php echo intval( $post->ID ); ?>"
+    data-selected="<?php
+                            $product_ids = array_filter( array_map( 'absint', (array) get_post_meta( $post->ID, '_upsell_ids', true ) ) );
+                            $json_ids    = array();
+
+                            foreach ( $product_ids as $product_id ) {
+                                $product = wc_get_product( $product_id );
+                                if ( is_object( $product ) ) {
+                                    $json_ids[ $product_id ] = wp_kses_post( html_entity_decode( $product->get_formatted_name(), ENT_QUOTES, get_bloginfo( 'charset' ) ) );
+                                }
+                            }
+
+                            echo esc_attr( json_encode( $json_ids ) );
+                        ?>"
+    value="<?php echo implode( ',', array_keys( $json_ids ) ); ?>" />
+    <?php echo wc_help_tip( __( 'Up-sells are products which you recommend instead of the currently viewed product, for example, products that are more profitable or better quality or more expensive.', 'woocommerce' ) );?>
+    </p>
+    <?php
+  }
+
+  function gs_wc_save_supplier_stock_meta(){
+    $supplier = isset( $_POST['supplier_id'] ) ? array_filter( array_map( 'intval', explode( ',', $_POST['supplier_id'] ) ) ) : array();
+    update_post_meta( $_POST['post_ID'], '_gs_wc_prod_supplier_entry', $supplier );
+    error_log("save_suppliers");
+    error_log(print_r($supplier, true));
+  }
+
+
+  /**
+	 * Search for suppliers and echo json.
+	 *
+	 * @param string $term (default: '')
+	 * @param string $post_types (default: array('gs_wc_suppliers'))
+	 */
+	public static function json_search_suppliers( $term = '', $post_types = array( 'gs_wc_suppliers' ) ) {
+		global $wpdb;
+		ob_start();
+		check_ajax_referer( 'gs-wc-search-suppliers', 'security' );
+		if ( empty( $term ) ) {
+			$term = wc_clean( stripslashes( $_GET['term'] ) );
+		} else {
+			$term = wc_clean( $term );
+		}
+		if ( empty( $term ) ) {
+			die();
+		}
+		$like_term = '%' . $wpdb->esc_like( $term ) . '%';
+		if ( is_numeric( $term ) ) {
+			$query = $wpdb->prepare( "
+				SELECT ID FROM {$wpdb->posts} posts LEFT JOIN {$wpdb->postmeta} postmeta ON posts.ID = postmeta.post_id
+				WHERE posts.post_status = 'publish'
+				AND (
+					posts.post_parent = %s
+					OR posts.ID = %s
+					OR posts.post_title LIKE %s
+					OR (
+						postmeta.meta_key = '_sku' AND postmeta.meta_value LIKE %s
+					)
+				)
+			", $term, $term, $term, $like_term );
+		} else {
+			$query = $wpdb->prepare( "
+				SELECT ID FROM {$wpdb->posts} posts LEFT JOIN {$wpdb->postmeta} postmeta ON posts.ID = postmeta.post_id
+				WHERE posts.post_status = 'publish'
+				AND (
+					posts.post_title LIKE %s
+					or posts.post_content LIKE %s
+					OR (
+						postmeta.meta_key = '_sku' AND postmeta.meta_value LIKE %s
+					)
+				)
+			", $like_term, $like_term, $like_term );
+		}
+		$query .= " AND posts.post_type IN ('" . implode( "','", array_map( 'esc_sql', $post_types ) ) . "')";
+		if ( ! empty( $_GET['exclude'] ) ) {
+			$query .= " AND posts.ID NOT IN (" . implode( ',', array_map( 'intval', explode( ',', $_GET['exclude'] ) ) ) . ")";
+		}
+		if ( ! empty( $_GET['include'] ) ) {
+			$query .= " AND posts.ID IN (" . implode( ',', array_map( 'intval', explode( ',', $_GET['include'] ) ) ) . ")";
+		}
+		if ( ! empty( $_GET['limit'] ) ) {
+			$query .= " LIMIT " . intval( $_GET['limit'] );
+		}
+		$posts          = array_unique( $wpdb->get_col( $query ) );
+		$found_suppliers = array();
+		if ( ! empty( $posts ) ) {
+			foreach ( $posts as $post ) {
+				$supplierName =  get_post( $post ) -> post_title;
+				// if ( ! current_user_can( 'read_product', $post ) ) {
+				// 	continue;
+				// }
+
+				$found_suppliers[ $post ] = rawurldecode( $supplierName );
+			}
+		}
+		$found_suppliers = apply_filters( 'gs_wc_json_search_found_suppliers', $found_suppliers );
+		wp_send_json( $found_suppliers );
+	}
 }
