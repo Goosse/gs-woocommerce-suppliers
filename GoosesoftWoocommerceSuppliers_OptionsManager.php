@@ -448,4 +448,3 @@ class GoosesoftWoocommerceSuppliers_OptionsManager {
         return $sitename;
     }
 }
-
