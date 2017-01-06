@@ -13,3 +13,48 @@
     padding-left: 1%;
     float: left
 }
+
+.woocommerce_options_panel div.form-field {
+  padding: 5px 20px 5px 162px !important
+}
+
+.woocommerce_options_panel table{
+  width:100%;
+}
+
+.woocommerce_options_panel table tr{
+  text-align: center;
+}
+
+.woocommerce_options_panel label .legend::before{
+  content:" ";
+  padding-left: 15px;
+  margin-left: 6px;
+}
+
+.woocommerce_options_panel label .legend::after{
+  padding-left: 3px;
+}
+.woocommerce_options_panel label .legend.sold::before, .woocommerce_options_panel table .sold {
+  background-color: #80ff80;
+}
+
+.woocommerce_options_panel label .legend.sold::after {
+  content:"Sold";
+}
+
+.woocommerce_options_panel label .legend.increased::before, .woocommerce_options_panel table .increased {
+  background-color: #b5deff;
+}
+
+.woocommerce_options_panel label .legend.increased::after {
+  content:"Increased";
+}
+
+.woocommerce_options_panel label .legend.reduced::before, .woocommerce_options_panel table .reduced {
+  background-color: #ff8080;
+}
+
+.woocommerce_options_panel label .legend.reduced::after {
+  content:"Reduced";
+}

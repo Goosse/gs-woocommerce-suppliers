@@ -116,7 +116,7 @@ jQuery( function( $ ) {
 					}
 				};
 
-			/*	if ( $( this ).data( 'multiple' ) === true ) {
+				if ( $( this ).data( 'multiple' ) === true ) {
 					select2_args.multiple = true;
 					select2_args.initSelection = function( element, callback ) {
 						var data     = $.parseJSON( element.attr( 'data-selected' ) );
@@ -133,7 +133,7 @@ jQuery( function( $ ) {
 					select2_args.formatSelection = function( data ) {
 						return '<div class="selected-option" data-id="' + data.id + '">' + data.text + '</div>';
 					};
-				} else {*/
+				} else {
 					select2_args.multiple = false;
 					select2_args.initSelection = function( element, callback ) {
 						var data = {
@@ -142,7 +142,7 @@ jQuery( function( $ ) {
 						};
 						return callback( data );
 					};
-				//}
+				}
 
 				select2_args = $.extend( select2_args, getEnhancedSelectFormatString() );
 
