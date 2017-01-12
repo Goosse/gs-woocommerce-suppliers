@@ -84,9 +84,9 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
     id bigint(20) NOT NULL AUTO_INCREMENT,
     date datetime NOT NULL,
     stock_increases_id bigint(20) NOT NULL,
-    single_price numeric(15,2),
+    single_price numeric(15,2) DEFAULT NULL,
     quantity bigint(20) NOT NULL,
-    is_sale boolean NOT NULL,
+    order_id bigint(20) DEFAULT NULL,
     note varchar(255) NOT NULL,
     PRIMARY KEY  (id)
     ) " .$charset_collate.";";
