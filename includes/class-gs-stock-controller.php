@@ -82,9 +82,9 @@ public function increaseStock($product_id,$supplier_id, $ammount, $cost, $note){
   $this->update_wc_stock($product_id);
 }
 
-//Set if it is a sale.  If $is_sale == false, it will be treated as a back end adjustment.
+//Set if it is a sale.  If $order_id == NULL, it will be treated as a back end adjustment.
 //Set fifo.  If $fifo = true, it will be treated as First In First Out, otherwise LIFO(Last In First Out)
-public function reduceStock($product_id, $ammount, $is_sale, $optionals = array()){
+public function reduceStock($product_id, $ammount, $order_id, $optionals = array()){
   global $wpdb;
 
   $defaults = array(
@@ -127,7 +127,7 @@ public function reduceStock($product_id, $ammount, $is_sale, $optionals = array(
         'stock_increases_id' => $entry->increase_id,
         'quantity' => -$entry->stock_left,
         'date' => current_time( 'mysql' ),
-        'is_sale' => $is_sale,
+        'order_id' => $order_id,
         'single_price'=>$optionals['single_price'],
         'note' => $optionals['note']
         )
@@ -140,7 +140,7 @@ public function reduceStock($product_id, $ammount, $is_sale, $optionals = array(
         'stock_increases_id' => $entry->increase_id,
         'quantity' => -$ammount,
         'date' => current_time( 'mysql' ),
-        'is_sale' => $is_sale,
+        'order_id' => $order_id,
         'single_price'=>$optionals['single_price'],
         'note' => $optionals['note']
         )
@@ -163,7 +163,7 @@ function reduce_stock_by_order($order){
       $qty = $item['qty'];
     //  $item_price = $item['line_total'];
       $postLink = $this->get_edit_post_link($order->id)?"<a href='".$this->get_edit_post_link($order->id)."'>View Order</a>":"";
-      $this->reduceStock($product->id, $qty, true, array('note'=>$postLink, 'single_price'=>$item['line_total']/$qty));
+      $this->reduceStock($product->id, $qty, $order->id, array('note'=>$postLink, 'single_price'=>$item['line_total']/$qty));
     }
   }
 }
@@ -173,7 +173,7 @@ function save_supplier_stock_meta($product_id, $post){
   return;
 
   if ($_POST['gs_wc_supplier_stock_qty'] < 0){
-    $this->reduceStock($product_id, abs($_POST['gs_wc_supplier_stock_qty']), false, array('note'=>$_POST['gs_stock_change_note']));
+    $this->reduceStock($product_id, abs($_POST['gs_wc_supplier_stock_qty']), '', array('note'=>$_POST['gs_stock_change_note']));
     return;
   }
   //  return;
@@ -217,7 +217,7 @@ $increaseIds = array_column($stockIncreaseHistory, 'id');
 
 
 $stockReductionHistory = $wpdb->get_results(
-"SELECT reductions.id, increases.supplier_id, increases.product_id, reductions.quantity, increases.cost, reductions.date, reductions.is_sale, reductions.note
+"SELECT reductions.id, increases.supplier_id, increases.product_id, reductions.quantity, increases.cost, reductions.date, reductions.order_id, reductions.note
 FROM {$this->stock_reductions_table} AS reductions
 LEFT JOIN {$this->stock_increases_table} AS increases
 ON reductions.stock_increases_id = increases.id
@@ -260,11 +260,11 @@ if (count($stockHistory)> 0) {
     continue;
 
 
-    if (!isset($entry['is_sale'])){
+    if (!isset($entry['order_id'])){
       $class = "increased";
     }
     else{
-      if ($entry['is_sale']) {
+      if ($entry['order_id']) {
         $class = "sold";
       }
       else{
