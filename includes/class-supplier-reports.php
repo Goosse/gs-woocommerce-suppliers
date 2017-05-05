@@ -31,7 +31,6 @@ class Supplier_Reports {
         'hide_title'  => true,
         'callback'    => array( __CLASS__, 'get_report' ),
       );
-      //  error_log(print_r(array_merge($reports, $suppliers), true));
 
       return $reports;
     }
@@ -40,7 +39,6 @@ class Supplier_Reports {
     * Get a report from our reports subfolder.
     */
     public static function get_report( $name ) {
-      error_log("name:".$name);
       $name  = sanitize_title( str_replace( '_', '-', $name ) );
       $class = 'GS_WC_Report_' . str_replace( '-', '_', $name );
       include_once('reports/class-gs-wc-report-' . $name . '.php');
@@ -51,9 +49,6 @@ class Supplier_Reports {
     }
     // public static function get_report( $path, $name='', $class='' ) {
     //
-    //   error_log($path);
-    //   error_log($name);
-    //   error_log($class);
     //   return $path;
     //   $newPath = plugins_url($path, __FILE__);
     //

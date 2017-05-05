@@ -45,7 +45,7 @@ class GS_Stock_Controller {
       $stock = $this->get_stock($product_id);
       $product = wc_get_product($product_id);
 
-      if ($stock != $product->stock) {
+      if ($stock != $product->get_stock_quantity()) {
         wc_update_product_stock($product_id, $stock);
         /*
         * This would automatically set a product to "In Stock" if quantity was set to greater than zero.
@@ -156,13 +156,12 @@ class GS_Stock_Controller {
           }
 
           function reduce_stock_by_order($order){
-
             foreach ( $order->get_items() as $item ) {
-              if ( $item['type'] == 'line_item' && ( $product = wc_get_product($item['item_meta']['_product_id'][0]) ) && $product->managing_stock() ) {
-                $qty = $item['qty'];
+              if ( $item->get_type() == 'line_item' && ( $product = wc_get_product($item->get_product_id()) ) && $product->managing_stock() ) {
+                $qty = $item->get_quantity();
                 //  $item_price = $item['line_total'];
-                $postLink = $this->get_edit_post_link($order->id)?"<a href='".$this->get_edit_post_link($order->id)."'>View Order</a>":"";
-                $this->reduceStock($product->id, $qty, $order->id, array('note'=>$postLink, 'single_price'=>$item['line_total']/$qty));
+                $postLink = $this->get_edit_post_link($order->get_id())?"<a href='".$this->get_edit_post_link($order->get_id())."'>View Order</a>":"";
+                $this->reduceStock($product->get_id(), $qty, $order->get_id(), array('note'=>$postLink, 'single_price'=>$item->get_total()/$qty));
               }
             }
           }
@@ -178,9 +177,6 @@ class GS_Stock_Controller {
                                                           AND increases.product_id={$product_id}
                                                           ORDER BY id ASC"
                                                           );
-
-              error_log(print_r($history, true));
-
               foreach($history as $entry){
                 $postLink = $this->get_edit_post_link($item->order_id)?"Sales return from <a href='".$this->get_edit_post_link($item->order_id)."'>this order</a>":"Sales return - No Order Found";
                 $this->increaseStock($entry->product_id,$entry->supplier_id, -($entry->qty), $entry->cost, $postLink);

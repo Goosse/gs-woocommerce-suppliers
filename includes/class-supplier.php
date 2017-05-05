@@ -176,16 +176,10 @@ class Supplier {
       ", $term, $term, $term, $like_term );
     } else {
       $query = $wpdb->prepare( "
-      SELECT ID FROM {$wpdb->posts} posts LEFT JOIN {$wpdb->postmeta} postmeta ON posts.ID = postmeta.post_id
+      SELECT ID FROM {$wpdb->posts} posts
       WHERE posts.post_status = 'publish'
-      AND (
-      posts.post_title LIKE %s
-      or posts.post_content LIKE %s
-      OR (
-      postmeta.meta_key = '_sku' AND postmeta.meta_value LIKE %s
-      )
-      )
-      ", $like_term, $like_term, $like_term );
+      AND posts.post_title LIKE %s
+      ", $like_term );
     }
     $query .= " AND posts.post_type IN ('" . implode( "','", array_map( 'esc_sql', $post_types ) ) . "')";
     if ( ! empty( $_GET['exclude'] ) ) {

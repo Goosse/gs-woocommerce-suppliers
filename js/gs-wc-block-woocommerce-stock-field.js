@@ -6,7 +6,7 @@ jQuery(document).ready(function(){
     //jQuery("span").css("display", "inline").fadeOut(2000);
   });
   jQuery('#_stock').focus(function(){
-    jQuery( "<span class='manage_sup_stock' style='padding-left: 5px;color: red;vertical-align: middle;'>Manage stock by supplier below.</span>" ).insertAfter( "#_stock+span" );
+    jQuery( "<span class='manage_sup_stock' style='padding-left: 5px;color: red;vertical-align: middle;'>Manage stock by supplier below.</span>" ).insertAfter( "#_stock" );
     //jQuery("span").css("display", "inline").fadeOut(2000);
   });
   jQuery('.wc_input_stock, .stock').focusout(function(){
