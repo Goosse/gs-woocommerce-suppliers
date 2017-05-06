@@ -205,7 +205,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
     <p class="form-field">
       <label for="supplier_ids"><?php _e( 'Change stock by supplier', 'gs_wc_suppliers' ); ?></label>
       <!-- Stock -->
-      <input type="number" style="width:8%;margin-right: 2%" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
+      <input type="number" style="width:8%;margin-right: 2%;height:32px;" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
 
       <input type="hidden"
       class="gs-wc-supplier-search"
@@ -219,7 +219,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       value="" />
 
       <!-- Cost -->
-      <input type="number" style="width:8%;margin-left: 2%" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
+      <input type="number" style="width:8%;margin-left: 2%;height:32px;" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
 
       <?php echo wc_help_tip( __( 'Add inventory to stock that is linked to a supplier at a speficied cost. These costs will be tracked using the FIFO method.', 'gs_wc_suppliers' ) );?>
 
