@@ -207,7 +207,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       <!-- Stock -->
       <input type="number" style="width:8%;margin-right: 2%;height:32px;" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
 
-      <input type="hidden"
+      <select type="hidden"
       class="gs-wc-supplier-search"
       style="width: 30%;"
       id="gs_wc_add_supplier_id"
@@ -216,7 +216,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       data-allow_clear="true"
       data-action="gs_wc_json_search_suppliers"
       data-multiple="false"
-      value="" />
+      value="" /></select>
 
       <!-- Cost -->
       <input type="number" style="width:8%;margin-left: 2%;height:32px;" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
