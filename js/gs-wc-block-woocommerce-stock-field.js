@@ -17,13 +17,13 @@ jQuery(document).ready(function(){
 
     if (jQuery("#gs_wc_supplier_stock_qty").val() < 0){
       jQuery("#gs_wc_supplier_cost").addClass("hidden");
-      jQuery('#s2id_gs_wc_add_supplier_id').attr('style', 'display: none !important');
+      jQuery('#inventory_product_data .selection').addClass("hidden");//.attr('style', 'display: none !important');
       jQuery('#gs_stock_change_note').css("margin", "0px");
       jQuery('#gs_stock_change_note').css("width", "40%");
     }
     else{
       jQuery("#gs_wc_supplier_cost").removeClass("hidden");
-      jQuery('#s2id_gs_wc_add_supplier_id').attr('style', 'display: block;width:30%');
+      jQuery('#inventory_product_data .selection').removeClass("hidden");
       jQuery('#gs_stock_change_note').css("margin", "8px 5px 0px 0px");
       jQuery('#gs_stock_change_note').css("width", "50%");
     }
