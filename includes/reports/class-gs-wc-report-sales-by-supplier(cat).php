@@ -3,104 +3,104 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 /**
- * WC_Report_Sales_By_Category
+ * WC_Report_Sales_By_Supplier
  *
  * @author      WooThemes
  * @category    Admin
  * @package     WooCommerce/Admin/Reports
  * @version     2.1.0
  */
+
+//include_once('../class-gs-stock-controller.php');
+
 class GS_WC_Report_Sales_By_Supplier extends WC_Admin_Report {
 
-	public $stockController
+  public $stockController;
 	/**
 	 * Chart colours.
 	 *
 	 * @var array
 	 */
-	public $chart_colours         = array();
+	public $chart_colours      = array();
 	/**
-	 * Categories ids.
+	 * Product ids.
 	 *
 	 * @var array
 	 */
-	public $show_suppliers       = array();
+	public $supplier_ids        = array();
 	/**
-	 * Item sales.
+	 * Product ids with titles.
 	 *
 	 * @var array
 	 */
-	private $item_sales           = array();
-	/**
-	 * Item sales and times.
-	 *
-	 * @var array
-	 */
-	private $item_sales_and_times = array();
+	 public $sale_counts;
+	 public $sale_ammounts;
+	public $supplier_ids_titles = array();
 	/**
 	 * Constructor.
 	 */
 
-include_once('includes/class-gs-stock-controller.php');
-
 	public function __construct() {
-		$this->stockController = new GS_Stock_Controller;
-		if ( isset( $_GET['show_suppliers'] ) ) {
-			$this->show_suppliers = is_array( $_GET['show_suppliers'] ) ? array_map( 'absint', $_GET['show_suppliers'] ) : array( absint( $_GET['show_suppliers'] ) );
+    $this->stockController = new GS_Stock_Controller;
+		if ( isset( $_GET['supplier_ids'] ) && is_array( $_GET['supplier_ids'] ) ) {
+			$this->supplier_ids = array_filter( array_map( 'absint', $_GET['supplier_ids'] ) );
+		} elseif ( isset( $_GET['supplier_ids'] ) ) {
+			$this->supplier_ids = array_filter( array( absint( $_GET['supplier_ids'] ) ) );
 		}
 	}
 	/**
-	 * Get all product ids in a category (and its children).
-	 *
-	 * @param  int $category_id
-	 * @return array
-	 */
-	public function get_products_in_category( $category_id ) {
-		$term_ids    = get_term_children( $category_id, 'product_cat' );
-		$term_ids[]  = $category_id;
-		$product_ids = get_objects_in_term( $term_ids, 'product_cat' );
-		return array_unique( apply_filters( 'woocommerce_report_sales_by_category_get_products_in_category', $product_ids, $category_id ) );
-	}
-	/**
-	 * Get all product ids in a category (and its children).
-	 *
-	 * @param  int $category_id
-	 * @return array
-	 */
-	public function get_products_from_supplier( $supplier_id ) {
-		$term_ids    = get_term_children( $category_id, 'product_cat' );
-		$term_ids[]  = $category_id;
-		$product_ids = get_objects_in_term( $term_ids, 'product_cat' );
-		return array_unique( apply_filters( 'woocommerce_report_sales_by_category_get_products_in_category', $product_ids, $category_id ) );
-	}
-
-	/**
 	 * Get the legend for the main chart sidebar.
-	 *
 	 * @return array
 	 */
 	public function get_chart_legend() {
-		if ( empty( $this->show_suppliers ) ) {
+		global $wpdb;
+
+		if ( empty( $this->supplier_ids ) ) {
 			return array();
 		}
-		$legend = array();
-		$index  = 0;
-		foreach ( $this->show_suppliers as $supplier_id ) {
-			$supplier    = get_post($supplier_id);
-			$total       = 0;
-			$product_ids = $this->get_products_in_category( $category->term_id );
-			foreach ( $product_ids as $id ) {
-				if ( isset( $this->item_sales[ $id ] ) ) {
-					$total += $this->item_sales[ $id ];
-				}
-			}
-			$legend[] = array(
-				'title'            => sprintf( __( '%1$s sales in %2$s', 'woocommerce' ), '<strong>' . wc_price( $total ) . '</strong>', $category->name ),
-				'color'            => isset( $this->chart_colours[ $index ] ) ? $this->chart_colours[ $index ] : $this->chart_colours[0],
-				'highlight_series' => $index,
-			);
-			$index++;
-		}
+		$legend   = array();
+		$total_sales = $wpdb->get_results(
+		$wpdb->prepare(
+		"SELECT SUM(reductions.single_price*reductions.quantity*-1) AS sales_total
+		FROM {$this->stockController->stock_reductions_table} AS reductions
+		LEFT JOIN {$this->stockController->stock_increases_table} AS increases
+		ON reductions.stock_increases_id = increases.id
+		WHERE reductions.is_sale = 1
+		AND reductions.date >= %s AND reductions.date < %s
+		AND increases.supplier_id IN (".implode(",", $this->supplier_ids).")",
+		date( 'Y-m-d', $this->start_date ),
+		date( 'Y-m-d', strtotime( '+1 DAY', $this->end_date ) ))
+		);
+
+		$total_sales = $total_sales[0]->sales_total;
+
+		$total_items = $wpdb->get_results(
+		$wpdb->prepare(
+		"SELECT SUM(reductions.quantity *-1) AS sales_count
+		FROM {$this->stockController->stock_reductions_table} AS reductions
+		LEFT JOIN {$this->stockController->stock_increases_table} AS increases
+		ON reductions.stock_increases_id = increases.id
+		WHERE reductions.is_sale = 1
+		AND reductions.date >= %s AND reductions.date < %s
+		AND increases.supplier_id IN (".implode(",", $this->supplier_ids).")",
+		date( 'Y-m-d', $this->start_date ),
+		date( 'Y-m-d', strtotime( '+1 DAY', $this->end_date ) ))
+		);
+
+		$total_items = $total_items[0]->sales_count;
+
+		$legend[] = array(
+			/* translators: %s: total items sold */
+			'title' => sprintf( __( '%s sales for the selected supplier', 'woocommerce' ), '<strong>' . wc_price( $total_sales ) . '</strong>' ),
+			'color' => $this->chart_colours['sales_amount'],
+			'highlight_series' => 1,
+		);
+		$legend[] = array(
+			/* translators: %s: total items purchased */
+			'title' => sprintf( __( '%s sales for selected supplier', 'gs_wc_suppliers' ), '<strong>' . ( $total_items ) . '</strong>' ),
+			'color' => $this->chart_colours['item_count'],
+			'highlight_series' => 0,
+		);
 		return $legend;
 	}
 	/**
@@ -113,56 +113,14 @@ include_once('includes/class-gs-stock-controller.php');
 			'month'        => __( 'This month', 'woocommerce' ),
 			'7day'         => __( 'Last 7 days', 'woocommerce' ),
 		);
-		$this->chart_colours = array( '#3498db', '#34495e', '#1abc9c', '#2ecc71', '#f1c40f', '#e67e22', '#e74c3c', '#2980b9', '#8e44ad', '#2c3e50', '#16a085', '#27ae60', '#f39c12', '#d35400', '#c0392b' );
+		$this->chart_colours = array(
+			'sales_amount' => '#3498db',
+			'item_count'   => '#d4d9dc',
+		);
 		$current_range = ! empty( $_GET['range'] ) ? sanitize_text_field( $_GET['range'] ) : '7day';
-		if ( ! in_array( $current_range, array( 'custom', 'year', 'last_month', 'month', '7day' ) ) ) {
+		if ( ! in_array( $current_range, array( 'custom', 'year', 'last_month', 'month', '7day' ) ) )
 			$current_range = '7day';
-		}
 		$this->calculate_current_range( $current_range );
-		// Get item sales data
-		if ( ! empty( $this->show_categories ) ) {
-			$order_items = $this->get_order_report_data( array(
-				'data' => array(
-					'_product_id' => array(
-						'type'            => 'order_item_meta',
-						'order_item_type' => 'line_item',
-						'function'        => '',
-						'name'            => 'product_id',
-					),
-					'_line_total' => array(
-						'type'            => 'order_item_meta',
-						'order_item_type' => 'line_item',
-						'function'        => 'SUM',
-						'name'            => 'order_item_amount',
-					),
-					'post_date' => array(
-						'type'     => 'post_data',
-						'function' => '',
-						'name'     => 'post_date',
-					),
-				),
-				'group_by'     => 'ID, product_id, post_date',
-				'query_type'   => 'get_results',
-				'filter_range' => true,
-			) );
-			$this->item_sales           = array();
-			$this->item_sales_and_times = array();
-			if ( is_array( $order_items ) ) {
-				foreach ( $order_items as $order_item ) {
-					switch ( $this->chart_groupby ) {
-						case 'day' :
-							$time = strtotime( date( 'Ymd', strtotime( $order_item->post_date ) ) ) * 1000;
-						break;
-						case 'month' :
-						default :
-							$time = strtotime( date( 'Ym', strtotime( $order_item->post_date ) ) . '01' ) * 1000;
-						break;
-					}
-					$this->item_sales_and_times[ $time ][ $order_item->product_id ] = isset( $this->item_sales_and_times[ $time ][ $order_item->product_id ] ) ? $this->item_sales_and_times[ $time ][ $order_item->product_id ] + $order_item->order_item_amount : $order_item->order_item_amount;
-					$this->item_sales[ $order_item->product_id ] = isset( $this->item_sales[ $order_item->product_id ] ) ? $this->item_sales[ $order_item->product_id ] + $order_item->order_item_amount : $order_item->order_item_amount;
-				}
-			}
-		}
 		include( WC()->plugin_path() . '/includes/admin/views/html-report-by-date.php' );
 	}
 	/**
@@ -171,56 +129,147 @@ include_once('includes/class-gs-stock-controller.php');
 	 * @return array
 	 */
 	public function get_chart_widgets() {
-		return array(
-			array(
-				'title'    => __( 'Suppliers', 'gs_wc_suppliers' ),
-				'callback' => array( $this, 'category_widget' ),
-			),
+		$widgets = array();
+		if ( ! empty( $this->supplier_ids ) ) {
+			$widgets[] = array(
+				'title'    => __( 'Showing reports for:', 'woocommerce' ),
+				'callback' => array( $this, 'current_filters' ),
+			);
+		}
+		$widgets[] = array(
+			'title'    => '',
+			'callback' => array( $this, 'products_widget' ),
 		);
+		return $widgets;
 	}
 	/**
-	 * Output category widget.
+	 * Output current filters.
 	 */
-	public function category_widget() {
+	public function current_filters() {
+		$this->supplier_ids_titles = array();
+		foreach ( $this->supplier_ids as $supplier_id ) {
+			$supplier = get_post( $supplier_id );
+			if ( $supplier ) {
+				$this->supplier_ids_titles[] = get_the_title($supplier_id);
+			} else {
+				$this->supplier_ids_titles[] = '#' . $supplier_id;
+			}
+		}
+		echo '<p>' . ' <strong>' . implode( ', ', $this->supplier_ids_titles ) . '</strong></p>';
+		echo '<p><a class="button" href="' . esc_url( remove_query_arg( 'supplier_ids' ) ) . '">' . __( 'Reset', 'woocommerce' ) . '</a></p>';
+	}
+	/**
+	 * Output products widget.
+	 */
+	public function products_widget() {
+    global $wpdb;
 		?>
-		<form method="GET">
-			<div>
-	      <input type="hidden"
-	      class="gs-wc-supplier-search"
-	      id="show_suppliers"
-	      name="show_suppliers[]"
-	      data-placeholder="<?php esc_attr_e( 'Search for a supplier&hellip;', 'gs_wc_suppliers' ); ?>"
-	      data-allow_clear="true"
-	      data-action="gs_wc_json_search_suppliers"
-	      data-multiple="true"
-	      value="" />
+		<h4 class="section_title"><span><?php _e( 'Supplier search', 'woocommerce' ); ?></span></h4>
+		<div class="section" >
+			<form method="GET">
+				<div>
+					<select type="hidden"
+		      class="gs-wc-supplier-search"
+		      style="width: 203px;"
+		      id="gs_wc_add_supplier_id"
+		      name="supplier_ids[]"
+		      data-placeholder="<?php esc_attr_e( 'Search for a supplier&hellip;', 'gs_wc_suppliers' ); ?>"
+		      data-allow_clear="true"
+		      data-action="gs_wc_json_search_suppliers"
+		      data-multiple="false"
+		      value="" /></select>
+					<input type="submit" class="submit button" value="<?php esc_attr_e( 'Show', 'woocommerce' ); ?>" />
+					<input type="hidden" name="range" value="<?php if ( ! empty( $_GET['range'] ) ) echo esc_attr( $_GET['range'] ) ?>" />
+					<input type="hidden" name="start_date" value="<?php if ( ! empty( $_GET['start_date'] ) ) echo esc_attr( $_GET['start_date'] ) ?>" />
+					<input type="hidden" name="end_date" value="<?php if ( ! empty( $_GET['end_date'] ) ) echo esc_attr( $_GET['end_date'] ) ?>" />
+					<input type="hidden" name="page" value="<?php if ( ! empty( $_GET['page'] ) ) echo esc_attr( $_GET['page'] ) ?>" />
+					<input type="hidden" name="tab" value="<?php if ( ! empty( $_GET['tab'] ) ) echo esc_attr( $_GET['tab'] ) ?>" />
+					<input type="hidden" name="report" value="<?php if ( ! empty( $_GET['report'] ) ) echo esc_attr( $_GET['report'] ) ?>" />
+				</div>
+			</form>
+		</div>
+		<!-- <h4 class="section_title"><span><?php _e( 'Top sellers', 'woocommerce' ); ?></span></h4>
+		<div class="section">
+			<table cellspacing="0"> -->
+				<?php
+/*
+        $top_sellers = $wpdb->get_results(
+        $wpdb->prepare(
+        "SELECT increases.supplier_id, SUM(reductions.quantity *-1) AS sales_count
+        FROM {$this->stockController->stock_reductions_table} AS reductions
+        LEFT JOIN {$this->stockController->stock_increases_table} AS increases
+        ON reductions.stock_increases_id = increases.id
+        WHERE reductions.is_sale = 1
+        AND reductions.date >= %s AND reductions.date < %s
+        GROUP BY increases.supplier_id",
+        date( 'Y-m-d', $this->start_date ),
+        date( 'Y-m-d', strtotime( '+1 DAY', $this->end_date ) ))
+        );
 
-				<a href="#" class="select_none"><?php _e( 'None', 'woocommerce' ); ?></a>
-				<a href="#" class="select_all"><?php _e( 'All', 'woocommerce' ); ?></a>
-				<input type="submit" class="submit button" value="<?php esc_attr_e( 'Show', 'woocommerce' ); ?>" />
-				<input type="hidden" name="range" value="<?php if ( ! empty( $_GET['range'] ) ) echo esc_attr( $_GET['range'] ) ?>" />
-				<input type="hidden" name="start_date" value="<?php if ( ! empty( $_GET['start_date'] ) ) echo esc_attr( $_GET['start_date'] ) ?>" />
-				<input type="hidden" name="end_date" value="<?php if ( ! empty( $_GET['end_date'] ) ) echo esc_attr( $_GET['end_date'] ) ?>" />
-				<input type="hidden" name="page" value="<?php if ( ! empty( $_GET['page'] ) ) echo esc_attr( $_GET['page'] ) ?>" />
-				<input type="hidden" name="tab" value="<?php if ( ! empty( $_GET['tab'] ) ) echo esc_attr( $_GET['tab'] ) ?>" />
-				<input type="hidden" name="report" value="<?php if ( ! empty( $_GET['report'] ) ) echo esc_attr( $_GET['report'] ) ?>" />
-			</div>
-			<script type="text/javascript">
-				jQuery(function(){
-					// Select all/None
-					jQuery( '.chart-widget' ).on( 'click', '.select_all', function() {
-						jQuery(this).closest( 'div' ).find( 'select option' ).attr( 'selected', 'selected' );
-						jQuery(this).closest( 'div' ).find('select').change();
-						return false;
-					});
-					jQuery( '.chart-widget').on( 'click', '.select_none', function() {
-						jQuery(this).closest( 'div' ).find( 'select option' ).removeAttr( 'selected' );
-						jQuery(this).closest( 'div' ).find('select').change();
-						return false;
-					});
-				});
-			</script>
-		</form>
+				if ( $top_sellers ) {
+					foreach ( $top_sellers as $supplier ) {
+						echo '<tr class="' . ( in_array( $supplier->supplier_id, $this->supplier_ids ) ? 'active' : '' ) . '">
+							<td class="count">' . $supplier->sales_count . '</td>
+							<td class="name"><a href="' . esc_url( add_query_arg( 'supplier_ids', $supplier->supplier_id ) ) . '">' . get_the_title( $supplier->supplier_id ) . '</a></td>
+						</tr>';
+            //<td class="sparkline">' . $this->sales_sparkline( $supplier->supplier_id, 7, 'count' ) . '</td>
+					}
+				} else {
+					echo '<tr><td colspan="3">' . __( 'No suppliers found in range', 'woocommerce' ) . '</td></tr>';
+				}
+				*/
+				?>
+	<!--		</table>
+		</div>
+		<h4 class="section_title"><span><?php _e( 'Top earners', 'woocommerce' ); ?></span></h4>
+		<div class="section">
+			<table cellspacing="0"> -->
+				<?php
+				/*
+				$top_earners = $wpdb->get_results(
+        $wpdb->prepare(
+        "SELECT increases.supplier_id, SUM(reductions.single_price*reductions.quantity*-1) AS order_total
+        FROM {$this->stockController->stock_reductions_table} AS reductions
+        LEFT JOIN {$this->stockController->stock_increases_table} AS increases
+        ON reductions.stock_increases_id = increases.id
+        WHERE reductions.is_sale = 1
+        AND reductions.date >= %s AND reductions.date < %s
+        GROUP BY increases.supplier_id",
+        date( 'Y-m-d', $this->start_date ),
+        date( 'Y-m-d', strtotime( '+1 DAY', $this->end_date ) ))
+        );
+
+				if ( $top_earners ) {
+					foreach ( $top_earners as $supplier ) {
+						echo '<tr class="' . ( in_array( $supplier->supplier_id, $this->supplier_ids ) ? 'active' : '' ) . '">
+							<td class="count">' . wc_price( $supplier->order_total ) . '</td>
+							<td class="name"><a href="' . esc_url( add_query_arg( 'supplier_ids', $supplier->supplier_id ) ) . '">' . get_the_title( $supplier->supplier_id ) . '</a></td>
+						</tr>';
+						//<td class="sparkline">' . $this->sales_sparkline( $product->product_id, 7, 'sales' ) . '</td>
+					}
+				} else {
+					echo '<tr><td colspan="3">' . __( 'No products found in range', 'woocommerce' ) . '</td></tr>';
+				}
+				*/
+				?>
+		<!--	</table>
+		</div> -->
+		<script type="text/javascript">
+			jQuery('.section_title').click(function(){
+				var next_section = jQuery(this).next('.section');
+				if ( jQuery(next_section).is(':visible') )
+					return false;
+				jQuery('.section:visible').slideUp();
+				jQuery('.section_title').removeClass('open');
+				jQuery(this).addClass('open').next('.section').slideDown();
+				return false;
+			});
+			jQuery('.section').slideUp( 100, function() {
+				<?php if ( empty( $this->supplier_ids ) ) : ?>
+					jQuery('.section_title:eq(1)').click();
+				<?php endif; ?>
+			});
+		</script>
 		<?php
 	}
 	/**
@@ -248,41 +297,62 @@ include_once('includes/class-gs-stock-controller.php');
 	 */
 	public function get_main_chart() {
 		global $wp_locale;
-		if ( empty( $this->show_categories ) ) {
+		global $wpdb;
+
+		if ( empty( $this->supplier_ids ) ) {
 			?>
 			<div class="chart-container">
-				<p class="chart-prompt"><?php _e( '&larr; Choose a supplier to view stats', 'gs_wc_suppliers' ); ?></p>
+				<p class="chart-prompt"><?php _e( 'Choose a supplier to view stats', 'woocommerce' ); ?></p>
 			</div>
 			<?php
 		} else {
-			$chart_data = array();
-			$index      = 0;
-			foreach ( $this->show_categories as $category ) {
-				$category            = get_term( $category, 'product_cat' );
-				$product_ids         = $this->get_products_in_category( $category->term_id );
-				$category_chart_data = array();
-				for ( $i = 0; $i <= $this->chart_interval; $i ++ ) {
-					$interval_total = 0;
-					switch ( $this->chart_groupby ) {
-						case 'day' :
-							$time = strtotime( date( 'Ymd', strtotime( "+{$i} DAY", $this->start_date ) ) ) * 1000;
-						break;
-						case 'month' :
-						default :
-							$time = strtotime( date( 'Ym', strtotime( "+{$i} MONTH", $this->start_date ) ) . '01' ) * 1000;
-						break;
-					}
-					foreach ( $product_ids as $id ) {
-						if ( isset( $this->item_sales_and_times[ $time ][ $id ] ) ) {
-							$interval_total += $this->item_sales_and_times[ $time ][ $id ];
-						}
-					}
-					$category_chart_data[] = array( $time, (float) wc_format_decimal( $interval_total, wc_get_price_decimals() ) );
-				}
-				$chart_data[ $category->term_id ]['category'] = $category->name;
-				$chart_data[ $category->term_id ]['data'] = $category_chart_data;
-				$index++;
-			}
+
+			$report = $wpdb->get_results("SELECT
+	(select meta_value from wp_postmeta where meta_key='_sku and post_id=(select meta_value from wp_woocommerce_order_itemmeta where meta_key='_product_id' and order_item_id=items.order_item_id)) as product_id,
+	CAST(orders.post_date AS DATE) as sale_date,
+	items.order_item_name as product_name,
+	suppliers.post_title as supplier,
+	(select meta_value from wp_woocommerce_order_itemmeta where meta_key='_qty' and order_item_id=items.order_item_id) as quantity,
+	(select meta_value from wp_woocommerce_order_itemmeta where meta_key='_line_subtotal' and order_item_id=items.order_item_id) / (select meta_value from wp_woocommerce_order_itemmeta where meta_key='_qty' and order_item_id=items.order_item_id) as sell_price,
+	(select meta_value from wp_woocommerce_order_itemmeta where meta_key='_line_subtotal' and order_item_id=items.order_item_id) as total_sell,
+	(CASE WHEN (select meta_value from wp_postmeta where meta_key='consignor' and post_id=suppliers.id) = 'yes'
+			THEN (select meta_value from wp_postmeta where meta_key='commission' and post_id=suppliers.id) / 100 * (select meta_value from wp_woocommerce_order_itemmeta where meta_key='_line_subtotal' and order_item_id=items.order_item_id) END) as commission,
+	(CASE WHEN (select meta_value from wp_postmeta where meta_key='consignor' and post_id=suppliers.id) != 'yes'
+			THEN (select cost from wp_goosesoft_wc_stock_increases as i join wp_goosesoft_wc_stock_reductions as r on i.id=r.stock_increases_id where r.order_id=orders.id and i.id=increases.id) END) as cost
+from wp_woocommerce_order_items as items
+join wp_posts as orders on orders.id = items.order_id
+join wp_woocommerce_order_itemmeta as meta on items.order_item_id = meta.order_item_id
+join wp_goosesoft_wc_stock_increases as increases on meta.meta_value = increases.product_id
+join wp_posts as suppliers on increases.supplier_id=suppliers.id
+where orders.post_type='shop_order'
+	and orders.post_status='wc-completed'
+	and meta.meta_key='_product_id'
+	and CAST(orders.post_date AS DATE) BETWEEN '2017-01-05' and '2017-01-11'
+order by sale_date asc");
+
+			// Get orders and dates in range - we want the SUM of order totals, COUNT of order items, COUNT of orders, and the date
+			$order_item_counts	 = $wpdb->get_results("SELECT reductions.date as post_date, SUM(reductions.quantity *-1) AS order_item_count
+        FROM wp_goosesoft_wc_stock_reductions AS reductions
+        LEFT JOIN wp_goosesoft_wc_stock_increases AS increases
+        ON reductions.stock_increases_id = increases.id
+        WHERE reductions.is_sale = 1
+        AND increases.supplier_id IN (".implode(",",$this->supplier_ids).")");
+
+			$order_item_amounts	 = $wpdb->get_results("SELECT reductions.date as post_date, reductions.single_price*reductions.quantity*-1 AS order_item_amount
+        FROM wp_goosesoft_wc_stock_reductions AS reductions
+        LEFT JOIN wp_goosesoft_wc_stock_increases AS increases
+        ON reductions.stock_increases_id = increases.id
+        WHERE reductions.is_sale = 1
+        AND increases.supplier_id IN (".implode(",",$this->supplier_ids).")");
+
+			// Prepare data for report
+			$order_item_counts  = $this->prepare_chart_data( $order_item_counts, 'post_date', 'order_item_count', $this->chart_interval, $this->start_date, $this->chart_groupby );
+			$order_item_amounts = $this->prepare_chart_data( $order_item_amounts, 'post_date', 'order_item_amount', $this->chart_interval, $this->start_date, $this->chart_groupby );
+			// Encode in json format
+			$chart_data = json_encode( array(
+				'order_item_counts'  => array_values( $order_item_counts ),
+				'order_item_amounts' => array_values( $order_item_amounts ),
+			) );
 			?>
 			<div class="chart-container">
 				<div class="chart-placeholder main"></div>
@@ -290,45 +360,33 @@ include_once('includes/class-gs-stock-controller.php');
 			<script type="text/javascript">
 				var main_chart;
 				jQuery(function(){
+					var order_data = jQuery.parseJSON( '<?php echo $chart_data; ?>' );
 					var drawGraph = function( highlight ) {
 						var series = [
-							<?php
-								$index = 0;
-								foreach ( $chart_data as $data ) {
-									$color  = isset( $this->chart_colours[ $index ] ) ? $this->chart_colours[ $index ] : $this->chart_colours[0];
-									$width  = $this->barwidth / sizeof( $chart_data );
-									$offset = ( $width * $index );
-									$series = $data['data'];
-									foreach ( $series as $key => $series_data ) {
-										$series[ $key ][0] = $series_data[0] + $offset;
-									}
-									echo '{
-										label: "' . esc_js( $data['category'] ) . '",
-										data: jQuery.parseJSON( "' . json_encode( $series ) . '" ),
-										color: "' . $color . '",
-										bars: {
-											fillColor: "' . $color . '",
-											fill: true,
-											show: true,
-											lineWidth: 1,
-											align: "center",
-											barWidth: ' . $width * 0.75 . ',
-											stack: false
-										},
-										' . $this->get_currency_tooltip() . ',
-										enable_tooltip: true,
-										prepend_label: true
-									},';
-									$index++;
-								}
-							?>
+							{
+								label: "<?php echo esc_js( __( 'Number of items sold', 'woocommerce' ) ) ?>",
+								data: order_data.order_item_counts,
+								color: '<?php echo $this->chart_colours['item_count']; ?>',
+								bars: { fillColor: '<?php echo $this->chart_colours['item_count']; ?>', fill: true, show: true, lineWidth: 0, barWidth: <?php echo $this->barwidth; ?> * 0.5, align: 'center' },
+								shadowSize: 0,
+								hoverable: false
+							},
+							{
+								label: "<?php echo esc_js( __( 'Sales amount', 'woocommerce' ) ) ?>",
+								data: order_data.order_item_amounts,
+								yaxis: 2,
+								color: '<?php echo $this->chart_colours['sales_amount']; ?>',
+								points: { show: true, radius: 5, lineWidth: 3, fillColor: '#fff', fill: true },
+								lines: { show: true, lineWidth: 4, fill: false },
+								shadowSize: 0,
+								<?php echo $this->get_currency_tooltip(); ?>
+							}
 						];
 						if ( highlight !== 'undefined' && series[ highlight ] ) {
 							highlight_series = series[ highlight ];
 							highlight_series.color = '#9c5d90';
-							if ( highlight_series.bars ) {
+							if ( highlight_series.bars )
 								highlight_series.bars.fillColor = '#9c5d90';
-							}
 							if ( highlight_series.lines ) {
 								highlight_series.lines.lineWidth = 5;
 							}
@@ -348,15 +406,13 @@ include_once('includes/class-gs-stock-controller.php');
 								},
 								xaxes: [ {
 									color: '#aaa',
-									reserveSpace: true,
 									position: "bottom",
 									tickColor: 'transparent',
 									mode: "time",
 									timeformat: "<?php echo ( 'day' === $this->chart_groupby ) ? '%d %b' : '%b'; ?>",
-									monthNames: <?php echo json_encode( array_values( $wp_locale->month_abbrev ) ); ?>,
+									monthNames: <?php echo json_encode( array_values( $wp_locale->month_abbrev ) ) ?>,
 									tickLength: 1,
 									minTickSize: [1, "<?php echo $this->chart_groupby; ?>"],
-									tickSize: [1, "<?php echo $this->chart_groupby; ?>"],
 									font: {
 										color: "#aaa"
 									}
@@ -364,7 +420,16 @@ include_once('includes/class-gs-stock-controller.php');
 								yaxes: [
 									{
 										min: 0,
+										minTickSize: 1,
+										tickDecimals: 0,
+										color: '#ecf0f1',
+										font: { color: "#aaa" }
+									},
+									{
+										position: "right",
+										min: 0,
 										tickDecimals: 2,
+										alignTicksWithAxis: 1,
 										color: 'transparent',
 										font: { color: "#aaa" }
 									}
