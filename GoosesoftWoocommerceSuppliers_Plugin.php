@@ -205,46 +205,20 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
     <p class="form-field">
       <label for="supplier_ids"><?php _e( 'Change stock by supplier', 'gs_wc_suppliers' ); ?></label>
       <!-- Stock -->
-<<<<<<< HEAD
-<<<<<<< HEAD
       <input type="number" style="width:8%;margin-right: 2%;height:32px;" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
 
       <select type="hidden"
-=======
-      <input type="number" style="width:8%;height:32px;margin-right: 2%" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
-
-      <select
->>>>>>> hotfix/0.2.3
-=======
-      <input type="number" style="width:8%;margin-right: 2%;height:32px;" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
-
-      <select type="hidden"
->>>>>>> hotfix/0.3.1
       class="gs-wc-supplier-search"
       style="width: 30%;"
       id="gs_wc_add_supplier_id"
       name="gs_wc_add_supplier_id"
       data-placeholder="<?php esc_attr_e( 'Search for a supplier&hellip;', 'woocommerce' ); ?>"
       data-action="gs_wc_json_search_suppliers"
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> hotfix/0.3.1
       data-multiple="false"
       value="" /></select>
 
       <!-- Cost -->
       <input type="number" style="width:8%;margin-left: 2%;height:32px;" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
-<<<<<<< HEAD
-=======
-      data-minimum_input_length="3"
-      data-allow_clear="true"></select>
-
-      <!-- Cost -->
-      <input type="number" style="width:8%;height:32px;margin-left: 2%" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
->>>>>>> hotfix/0.2.3
-=======
->>>>>>> hotfix/0.3.1
 
       <?php echo wc_help_tip( __( 'Add inventory to stock that is linked to a supplier at a speficied cost. These costs will be tracked using the FIFO method.', 'gs_wc_suppliers' ) );?>
 
