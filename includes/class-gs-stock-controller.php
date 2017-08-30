@@ -13,11 +13,10 @@ class GS_Stock_Controller {
     //    add_action('edit_form_top', array(&$this, 'check_wc_stock'),10,1);
 
 
-    add_filter('woocommerce_restore_order_stock_quantity', array(&$this, 'restore_order_stock_quantity'), 10, 2);
+    add_filter('woocommerce_restore_order_stock_quantity', array(&$this, 'increase_order_item_stock_quantity'), 10, 2);
     add_action('woocommerce_reduce_order_stock', array(&$this, 'reduce_stock_by_order'), 10, 1);
+    add_action('woocommerce_restock_refunded_item', array(&$this, 'restock_refunded_item'), 10, 5);
   }
-
-
   // function get_stock_for_woocommerce($wc_stock, $product){
   //   return $this->get_stock($product->id);
   // }
@@ -166,7 +165,7 @@ class GS_Stock_Controller {
             }
           }
 
-          function restore_order_stock_quantity($order_item_qty, $item_id){
+          function increase_order_item_stock_quantity($order_item_qty, $item_id){
             global $wpdb;
               $itemsTable = $wpdb->prefix. "woocommerce_order_items";
               $item = $wpdb->get_results( $wpdb->prepare("SELECT * FROM {$itemsTable} WHERE order_item_id=%d", array($item_id)))[0];
@@ -178,11 +177,25 @@ class GS_Stock_Controller {
                                                           ORDER BY id ASC"
                                                           );
               foreach($history as $entry){
-                $postLink = $this->get_edit_post_link($item->order_id)?"Sales return from <a href='".$this->get_edit_post_link($item->order_id)."'>this order</a>":"Sales return - No Order Found";
+                $postLink = $this->get_edit_post_link($item->order_id)?"Manually increased from <a href='".$this->get_edit_post_link($item->order_id)."'>this order</a>":"Manually increased from order - No Order Found";
                 $this->increaseStock($entry->product_id,$entry->supplier_id, -($entry->qty), $entry->cost, $postLink);
               }
 
               return 0; //Return 0 because we are updating stock quantities ourselves.
+          }
+
+          function restock_refunded_item($product_id, $old_stock, $new_stock, $order, $product){
+            global $wpdb;
+              $history = $wpdb->get_results("SELECT increases.id as id, product_id, supplier_id, cost, reductions.quantity as qty FROM {$this->stock_increases_table} as increases
+                                                          JOIN {$this->stock_reductions_table} as reductions ON reductions.stock_increases_id=increases.id
+                                                          WHERE reductions.order_id={$order->get_id()}
+                                                          AND increases.product_id={$product_id}
+                                                          ORDER BY id ASC"
+                                                          );
+              foreach($history as $entry){
+                $postLink = $this->get_edit_post_link($order->get_id())?"Sales return from <a href='".$this->get_edit_post_link($order->get_id())."'>this order</a>":"Sales return - No Order Found";
+                $this->increaseStock($product_id,$entry->supplier_id, -($entry->qty), $entry->cost, $postLink);
+              }
           }
 
           function save_supplier_stock_meta($product_id, $post){
