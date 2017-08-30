@@ -175,7 +175,6 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
 
     //Scripts
     //wp_register_script( 'gs_wc_enhanced_supplier_select', plugins_url('/js/gs-wc-enhanced-supplier-select.js')l array( 'jquery', 'select2' ));
-    error_log("enqueue scripts");
     wp_register_script( 'gs_wc_enhanced_supplier_select', plugins_url('/'.basename(__DIR__).'/js/gs-wc-enhanced-supplier-select.js'), array( 'jquery', 'select2', 'wc-enhanced-select' ));
     wp_localize_script( 'gs_wc_enhanced_supplier_select', 'wc_enhanced_supplier_select_params', array(
       'search_suppliers_nonce'     => wp_create_nonce( 'gs-wc-search-suppliers' ),
@@ -184,7 +183,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
     wp_register_script( 'gs_wc_block_woocommerce_stock_fields', plugins_url('/'.basename(__DIR__).'/js/gs-wc-block-woocommerce-stock-field.js'), array( 'jquery' ));
 
     $enque_enhanced_select = false;
-    if(isset($_GET['page']) && isset($_GET['report'])){
+    if(isset($_GET['page']) && isset($_GET['tab'])){
       if ($_GET['page'] == 'wc-reports' && $_GET['tab'] == 'suppliers'){
         $enque_enhanced_select = true;
       }
