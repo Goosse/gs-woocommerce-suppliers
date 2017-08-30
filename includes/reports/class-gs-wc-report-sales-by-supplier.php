@@ -211,6 +211,9 @@ class GS_WC_Report_Sales_By_Supplier extends WC_Admin_Report {
 		if (empty($_GET['supplier_id'])){
 			return '';
 		}
+
+		echo "start date:".date( 'Y-m-d H:i:s', $this->start_date );
+
 		$supplier_sales_data = $wpdb->get_results(
 		$wpdb->prepare(
 									"SELECT
@@ -229,8 +232,8 @@ class GS_WC_Report_Sales_By_Supplier extends WC_Admin_Report {
 										join wp_posts as orders on orders.id = order_items.order_id and CAST(orders.post_date AS DATE) BETWEEN %s and %s
 									order by sale_date asc",
 		$_GET['supplier_id'],
-		date( 'Y-m-d', strtotime($_GET['start_date'] )),
-		date( 'Y-m-d', strtotime( '+1 DAY', strtotime($_GET['end_date'] )) ))
+		date( 'Y-m-d H:i:s', $this->start_date ),
+		date( 'Y-m-d H:i:s', $this->end_date ))
 		);
 
 		return $supplier_sales_data;
