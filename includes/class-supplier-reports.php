@@ -25,12 +25,28 @@ class Supplier_Reports {
     //     )
     //   );
 
-      $reports['orders']['reports']['sales_by_supplier'] = array(
-        'title'       => __( 'Sales by supplier', 'woocommerce' ),
-        'description' => '',
-        'hide_title'  => true,
-        'callback'    => array( __CLASS__, 'get_report' ),
-      );
+      $reports['suppliers'] = array(
+				'title'  => __( 'Suppliers', 'woocommerce' ),
+				'reports' => array(
+					"sales_by_supplier" => array(
+            'title'       => __( 'Sales by supplier', 'woocommerce' ),
+            'description' => '',
+            'hide_title'  => true,
+            'callback'    => array( __CLASS__, 'get_report' ),
+					),
+					"stock_by_supplier" => array(
+            'title'       => __( 'Stock by supplier', 'woocommerce' ),
+            'description' => '',
+            'hide_title'  => true,
+            'callback'    => array( __CLASS__, 'get_report' ),
+					),
+        ));
+      // $reports['orders']['reports']['sales_by_supplier'] = array(
+      //   'title'       => __( 'Sales by supplier', 'woocommerce' ),
+      //   'description' => '',
+      //   'hide_title'  => true,
+      //   'callback'    => array( __CLASS__, 'get_report' ),
+      // );
 
       return $reports;
     }
