@@ -175,16 +175,15 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
 
     //Scripts
     //wp_register_script( 'gs_wc_enhanced_supplier_select', plugins_url('/js/gs-wc-enhanced-supplier-select.js')l array( 'jquery', 'select2' ));
-    error_log("enqueue scripts");
     wp_register_script( 'gs_wc_enhanced_supplier_select', plugins_url('/'.basename(__DIR__).'/js/gs-wc-enhanced-supplier-select.js'), array( 'jquery', 'select2', 'wc-enhanced-select' ));
     wp_localize_script( 'gs_wc_enhanced_supplier_select', 'wc_enhanced_supplier_select_params', array(
       'search_suppliers_nonce'     => wp_create_nonce( 'gs-wc-search-suppliers' ),
     ));
 
     wp_register_script( 'gs_wc_block_woocommerce_stock_fields', plugins_url('/'.basename(__DIR__).'/js/gs-wc-block-woocommerce-stock-field.js'), array( 'jquery' ));
-    
+
     $enque_enhanced_select = false;
-    if(isset($_GET['page']) && isset($_GET['report'])){
+    if(isset($_GET['page']) && isset($_GET['tab'])){
       if ($_GET['page'] == 'wc-reports' && $_GET['tab'] == 'suppliers'){
         $enque_enhanced_select = true;
       }
@@ -207,6 +206,7 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       <label for="supplier_ids"><?php _e( 'Change stock by supplier', 'gs_wc_suppliers' ); ?></label>
       <!-- Stock -->
 <<<<<<< HEAD
+<<<<<<< HEAD
       <input type="number" style="width:8%;margin-right: 2%;height:32px;" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
 
       <select type="hidden"
@@ -215,6 +215,11 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
 
       <select
 >>>>>>> hotfix/0.2.3
+=======
+      <input type="number" style="width:8%;margin-right: 2%;height:32px;" name="gs_wc_supplier_stock_qty" id="gs_wc_supplier_stock_qty" value="" placeholder="Qty" >
+
+      <select type="hidden"
+>>>>>>> hotfix/0.3.1
       class="gs-wc-supplier-search"
       style="width: 30%;"
       id="gs_wc_add_supplier_id"
@@ -222,11 +227,15 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       data-placeholder="<?php esc_attr_e( 'Search for a supplier&hellip;', 'woocommerce' ); ?>"
       data-action="gs_wc_json_search_suppliers"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> hotfix/0.3.1
       data-multiple="false"
       value="" /></select>
 
       <!-- Cost -->
       <input type="number" style="width:8%;margin-left: 2%;height:32px;" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
+<<<<<<< HEAD
 =======
       data-minimum_input_length="3"
       data-allow_clear="true"></select>
@@ -234,6 +243,8 @@ class GoosesoftWoocommerceSuppliers_Plugin extends GoosesoftWoocommerceSuppliers
       <!-- Cost -->
       <input type="number" style="width:8%;height:32px;margin-left: 2%" name="gs_wc_supplier_cost" id="gs_wc_supplier_cost" value="" placeholder="Cost" step="any" >
 >>>>>>> hotfix/0.2.3
+=======
+>>>>>>> hotfix/0.3.1
 
       <?php echo wc_help_tip( __( 'Add inventory to stock that is linked to a supplier at a speficied cost. These costs will be tracked using the FIFO method.', 'gs_wc_suppliers' ) );?>
 

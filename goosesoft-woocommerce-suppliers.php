@@ -3,7 +3,7 @@
    Plugin Name: GooseSoft WooCommerce Suppliers
    Plugin URI: http://wordpress.org/extend/plugins/goosesoft-woocommerce-suppliers/
    GitHub Plugin URI: https://github.com/Goosse/gs-woocommerce-suppliers
-   Version: 0.2.1
+   Version: 0.3.1
    Author: Joshua Goossen
    Description: Adds suppliers to Woocommerce and fields in the product edit page to assign suppliers and costs to the product.
    Text Domain: goosesoft-woocommerce-suppliers
